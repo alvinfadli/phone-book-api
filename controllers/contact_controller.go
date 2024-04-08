@@ -5,8 +5,8 @@ import (
     "gorm.io/gorm"
     "net/http"
     "strconv"
-
-    "phone-book-api/models"
+	
+	"phone-book-api/models"
 	"phone-book-api/helpers"
 )
 
@@ -45,6 +45,25 @@ func (ctrl *ContactController) GetByID(c *gin.Context) {
         return
     }
     c.JSON(http.StatusOK, helpers.RespondWithData(contact))
+}
+
+func (ctrl *ContactController) GetByName(c *gin.Context) {
+	var req struct {
+        Name string `json:"name" binding:"required"`
+    }
+
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, helpers.RespondWithError(http.StatusBadRequest, err.Error()))
+        return
+    }
+
+    var contacts []models.Contact
+    if err := ctrl.DB.Where("name LIKE ?", "%"+req.Name+"%").Find(&contacts).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, helpers.RespondWithError(http.StatusInternalServerError, "Failed to search contacts"))
+        return
+    }
+
+    c.JSON(http.StatusOK, helpers.RespondWithData(contacts))
 }
 
 func (ctrl *ContactController) Update(c *gin.Context) {
