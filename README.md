@@ -3,6 +3,7 @@
 
 Phone Book API
 
+Note : Go version 1.22.2
 
 ## Setup Database
 
