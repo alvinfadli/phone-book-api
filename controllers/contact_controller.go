@@ -58,7 +58,7 @@ func (ctrl *ContactController) GetByName(c *gin.Context) {
     }
 
     var contacts []models.Contact
-    if err := ctrl.DB.Where("name LIKE ?", "%"+req.Name+"%").Find(&contacts).Error; err != nil {
+    if err := ctrl.DB.Where("name ILIKE ?", "%"+req.Name+"%").Find(&contacts).Error; err != nil {
         c.JSON(http.StatusInternalServerError, helpers.RespondWithError(http.StatusInternalServerError, "Failed to search contacts"))
         return
     }
