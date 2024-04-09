@@ -33,7 +33,10 @@ func (ctrl *ContactController) Create(c *gin.Context) {
 
 func (ctrl *ContactController) GetAll(c *gin.Context) {
     var contacts []models.Contact
-    ctrl.DB.Find(&contacts)
+    if err := ctrl.DB.Order("name").Find(&contacts).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, helpers.RespondWithError(http.StatusInternalServerError, "Failed to fetch contacts"))
+        return
+    }
     c.JSON(http.StatusOK, helpers.RespondWithData(contacts))
 }
 
