@@ -20,7 +20,7 @@ Create new user and grant access to database
 
 ```bash
   CREATE USER alvin WITH ENCRYPTED PASSWORD '123';
-  GRANT ALL PRIVILEGES ON DATABASE phone_book TO myuser;
+  GRANT ALL PRIVILEGES ON DATABASE phone_book TO alvin;
 ```
 
 P.S : You can edit the user and database on the .env file
