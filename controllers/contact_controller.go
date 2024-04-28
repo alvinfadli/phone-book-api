@@ -5,6 +5,7 @@ import (
     "gorm.io/gorm"
     "net/http"
     "strconv"
+    "strings"
 	
 	"phone-book-api/models"
 	"phone-book-api/helpers"
@@ -31,14 +32,27 @@ func (ctrl *ContactController) Create(c *gin.Context) {
     c.JSON(http.StatusCreated, helpers.RespondWithData(contact))
 }
 
+// using query params for searching by name here
 func (ctrl *ContactController) GetAll(c *gin.Context) {
     var contacts []models.Contact
-    if err := ctrl.DB.Order("name").Find(&contacts).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, helpers.RespondWithError(http.StatusInternalServerError, "Failed to fetch contacts"))
-        return
+
+    name := c.Query("name")
+    name = strings.ToLower(name)
+    if name != "" {
+        if err := ctrl.DB.Where("LOWER(name) LIKE ?", "%"+name+"%").Order("name").Find(&contacts).Error; err != nil {
+            c.JSON(http.StatusInternalServerError, helpers.RespondWithError(http.StatusInternalServerError, "Failed to fetch contacts"))
+            return
+        }
+    } else {
+        if err := ctrl.DB.Order("name").Find(&contacts).Error; err != nil {
+            c.JSON(http.StatusInternalServerError, helpers.RespondWithError(http.StatusInternalServerError, "Failed to fetch contacts"))
+            return
+        }
     }
+
     c.JSON(http.StatusOK, helpers.RespondWithData(contacts))
 }
+
 
 func (ctrl *ContactController) GetByID(c *gin.Context) {
     id, _ := strconv.Atoi(c.Param("id"))
