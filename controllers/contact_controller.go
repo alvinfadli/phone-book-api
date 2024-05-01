@@ -6,6 +6,7 @@ import (
     "net/http"
     "strconv"
     "strings"
+    "math"
 	
 	"phone-book-api/models"
 	"phone-book-api/helpers"
@@ -36,22 +37,47 @@ func (ctrl *ContactController) Create(c *gin.Context) {
 func (ctrl *ContactController) GetAll(c *gin.Context) {
     var contacts []models.Contact
 
+    page, err := strconv.Atoi(c.Query("page"))
+    if err != nil || page < 1 {
+        page = 1
+    }
+    perPage, err := strconv.Atoi(c.Query("perPage"))
+    if err != nil || perPage < 1 {
+        perPage = 10
+    }
+    offset := (page - 1) * perPage
+
     name := c.Query("name")
     name = strings.ToLower(name)
+    query := ctrl.DB
     if name != "" {
-        if err := ctrl.DB.Where("LOWER(name) LIKE ?", "%"+name+"%").Order("name").Find(&contacts).Error; err != nil {
-            c.JSON(http.StatusInternalServerError, helpers.RespondWithError(http.StatusInternalServerError, "Failed to fetch contacts"))
-            return
-        }
-    } else {
-        if err := ctrl.DB.Order("name").Find(&contacts).Error; err != nil {
-            c.JSON(http.StatusInternalServerError, helpers.RespondWithError(http.StatusInternalServerError, "Failed to fetch contacts"))
-            return
-        }
+        query = query.Where("LOWER(name) LIKE ?", "%"+name+"%")
+    }
+    
+    var total int64
+    if err := query.Model(&models.Contact{}).Count(&total).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, helpers.RespondWithError(http.StatusInternalServerError, "Failed to fetch contacts"))
+        return
+    }
+    
+    if err := query.Order("name").Offset(offset).Limit(perPage).Find(&contacts).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, helpers.RespondWithError(http.StatusInternalServerError, "Failed to fetch contacts"))
+        return
     }
 
-    c.JSON(http.StatusOK, helpers.RespondWithData(contacts))
+    pagination := map[string]interface{}{
+        "total":    total,
+        "page":     page,
+        "perPage":  perPage,
+        "lastPage": int(math.Ceil(float64(total) / float64(perPage))),
+    }
+    response := map[string]interface{}{
+        "contacts":  contacts,
+        "pagination": pagination,
+    }
+    c.JSON(http.StatusOK, helpers.RespondWithData(response))
 }
+
 
 
 func (ctrl *ContactController) GetByID(c *gin.Context) {
